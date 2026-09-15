@@ -32,14 +32,15 @@ RUN apt-get update && apt-get install -y --no-install-recommends help2man perl l
     && make install DESTDIR=/out 'VL_INST_PUBLIC_BIN_FILES=verilator_bin$(EXEEXT)'
 
 # cocotb has no prebuilt wheel (sdist only, compiles a C extension) —
-# build the wheel here where build-essential already exists, so the
-# final stage doesn't need a compiler toolchain at all.
+# build the wheel here where build-essential already exists.
 RUN pip wheel --no-cache-dir --wheel-dir /wheels \
     cocotb==2.0.1 fusesoc==2.4.6 pytest==8.4.2
 
 FROM ubuntu:24.04
+# g++ is required at runtime, not just build time: Verilator compiles the
+# generated C++ model per test run, unlike iverilog which just interprets.
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    python3 python3-pip libpython3.12 tcl libreadline8t64 make perl \
+    python3 python3-pip libpython3.12 tcl libreadline8t64 make perl g++ \
     && rm -rf /var/lib/apt/lists/*
 COPY --from=build /out/usr/local /usr/local
 COPY --from=build /wheels /wheels
