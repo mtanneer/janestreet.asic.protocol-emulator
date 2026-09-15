@@ -16,12 +16,15 @@ architecture, or protocol implementation has been designed yet.
 Two workflows:
 
 - **`ci.yaml`** — ours. Lint (verilator), sim (cocotb + fusesoc), synth
-  check (yosys). Runs on every push/PR, skips docs-only changes. Uses a
-  slim custom toolchain image (`ci/Dockerfile`, ~830MB vs. the 3.76GB
-  `hpretl/iic-osic-tools` it's derived from), published to GHCR by
-  `ci-image.yaml`. `ci.yaml`'s first job (`ensure-image`) pulls that image
-  and builds it inline as a fallback if the pull fails, so it's never
-  blocked on `ci-image.yaml` having already run.
+  check (yosys). Runs on every push/PR; a `changes` job detects docs-only
+  diffs and the three checks no-op (fast success) rather than being
+  skipped outright — required status checks must always resolve, or a
+  docs-only PR blocks merge forever. Uses a slim custom toolchain image
+  (`ci/Dockerfile`, ~830MB vs. the 3.76GB `hpretl/iic-osic-tools` it's
+  derived from), published to GHCR by `ci-image.yaml`. `ci.yaml`'s
+  `ensure-image` job pulls that image and builds it inline as a fallback
+  if the pull fails, so it's never blocked on `ci-image.yaml` having
+  already run.
 - **`ci-image.yaml`** — builds/publishes the slim image, only when
   `ci/Dockerfile` changes.
 - **`tt-gds.yaml`** — Tiny Tapeout's LibreLane/GDS build. Manual-trigger
