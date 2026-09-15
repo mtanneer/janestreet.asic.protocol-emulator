@@ -1,14 +1,12 @@
 name: ci
 
+# push: only main (post-merge). pull_request already covers every branch
+# with an open PR — without this split, a PR branch triggers both events
+# for the same commit and every job runs twice.
 on:
   push:
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
+    branches: [main]
   pull_request:
-    paths-ignore:
-      - "**.md"
-      - "docs/**"
   workflow_dispatch:
 
 concurrency:
@@ -26,11 +24,33 @@ env:
   CI_IMAGE: ghcr.io/mtanneer/protocol-emulator-ci:latest
 
 jobs:
+  # Required status checks must always run to resolve (a skipped check via
+  # paths-ignore on the trigger blocks merge forever, since GitHub can't
+  # tell "skipped" from "never ran"). So the trigger stays unconditional
+  # and this job instead flags docs-only changes; lint/sim/synth-check
+  # check this flag and skip their real work (fast no-op success) rather
+  # than never running.
+  changes:
+    runs-on: ubuntu-24.04
+    outputs:
+      code: ${{ steps.filter.outputs.code }}
+    steps:
+      - uses: actions/checkout@v6
+      - uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            code:
+              - '!**.md'
+              - '!docs/**'
+
   # First push (or any push where ci-image.yaml hasn't published yet)
   # would otherwise race: this job pulls the image and builds+pushes it
   # locally as a fallback if the pull fails, so ci.yaml never depends on
   # ci-image.yaml having already finished.
   ensure-image:
+    needs: changes
+    if: needs.changes.outputs.code == 'true'
     runs-on: ubuntu-24.04
     permissions:
       contents: read
@@ -62,32 +82,39 @@ jobs:
           tags: ${{ env.CI_IMAGE }}
 
   lint:
-    needs: ensure-image
+    needs: [changes, ensure-image]
+    if: always() && needs.changes.result == 'success'
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/mtanneer/protocol-emulator-ci:latest
     steps:
       - uses: actions/checkout@v6
+        if: needs.changes.outputs.code == 'true'
       - name: Verilator lint
+        if: needs.changes.outputs.code == 'true'
         run: verilator --lint-only -Wall -Wno-DECLFILENAME src/project.v
 
   sim:
-    needs: ensure-image
+    needs: [changes, ensure-image]
+    if: always() && needs.changes.result == 'success'
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/mtanneer/protocol-emulator-ci:latest
     steps:
       - uses: actions/checkout@v6
+        if: needs.changes.outputs.code == 'true'
       - name: cocotb test
+        if: needs.changes.outputs.code == 'true'
         run: |
           cd test
           make clean
           make
           ! grep failure results.xml
       - name: fusesoc sim
+        if: needs.changes.outputs.code == 'true'
         run: make sim
       - uses: actions/upload-artifact@v7
-        if: always()
+        if: always() && needs.changes.outputs.code == 'true'
         with:
           name: sim-results
           path: |
@@ -95,12 +122,15 @@ jobs:
             test/results.xml
 
   synth-check:
-    needs: ensure-image
+    needs: [changes, ensure-image]
+    if: always() && needs.changes.result == 'success'
     runs-on: ubuntu-24.04
     container:
       image: ghcr.io/mtanneer/protocol-emulator-ci:latest
     steps:
       - uses: actions/checkout@v6
+        if: needs.changes.outputs.code == 'true'
       - name: yosys elaborate + synth stat
+        if: needs.changes.outputs.code == 'true'
         run: |
           yosys -p "read_verilog src/project.v; hierarchy -top $(grep top_module info.yaml | sed -E 's/.*\"(.*)\".*/\1/'); proc; opt; stat"
