@@ -3,9 +3,6 @@ project:
   title:        "Protocol Emulator ASIC (dummy scaffold)"      # Project title
   author:       "mtanneer"      # Your name
   discord:      ""      # Your discord username, for communication and automatically assigning you a Tapeout role (optional)
-  # Repo-only field, not read by Tiny Tapeout tooling: names credited in LICENSE copyright line.
-  contributors:
-    - "Manas Tanneeru"
   description:  "DUMMY placeholder design used to validate the sim/build/CI pipeline. Not the real protocol emulator."
   language:     "Verilog" # other examples include SystemVerilog, Amaranth, VHDL, etc
   clock_hz:     0       # Clock frequency in Hz (or 0 if not applicable)
