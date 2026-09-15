@@ -24,6 +24,7 @@ jobs:
   ensure-image:
     runs-on: ubuntu-24.04
     permissions:
+      contents: read
       packages: write
     steps:
       - uses: actions/checkout@v6
