@@ -1,60 +1,56 @@
 ![](../../workflows/ci/badge.svg) ![](../../workflows/tt-gds/badge.svg)
 
-> **Status: scaffold.** `src/project.v` is a dummy placeholder (from the
-> Tiny Tapeout template) used to validate the sim/build/CI pipeline before
-> real RTL exists. See [SPEC.md](SPEC.md) for the competition requirements.
->
-> Two CI workflows: `ci.yaml` is our own (lint, sim, synth-check, runs on
-> every push), using our own slim toolchain image (`ci/Dockerfile`,
-> ~830MB vs. the 3.76GB `hpretl/iic-osic-tools` it's derived from) —
-> that's the fast feedback loop. `tt-gds.yaml` is Tiny Tapeout's
-> LibreLane/GDS build, manual-trigger only (`workflow_dispatch`) since
-> it's slow and PDK-heavy — run it explicitly when checking
-> submission-readiness, not on every WIP push. Local dev also supports
-> fusesoc (`Makefile`, `protocol_emulator.core`) layered over the same
-> `src/` files.
->
-> `ci.yaml`'s first job (`ensure-image`) pulls the GHCR image and builds
-> it inline as a fallback if the pull fails (e.g. first run ever, before
-> `ci-image.yaml` has published anything) — no manual sequencing needed.
+# Protocol Emulator ASIC
 
-# Tiny Tapeout Verilog Project Template
+Entry for the [Jane Street protocol emulator ASIC competition](https://blog.janestreet.com/protocol-emulator-asic-competition/).
+See [SPEC.md](SPEC.md) for the full competition requirements (protocols,
+process/area constraints, deadlines).
 
-- [Read the documentation for project](docs/info.md)
+**Status: scaffold.** `src/project.v` is a dummy placeholder (from the
+[Tiny Tapeout](https://tinytapeout.com) cmos5l template) used to validate
+the sim/build/CI pipeline before real RTL exists. No ISA, CPU
+architecture, or protocol implementation has been designed yet.
 
-## What is Tiny Tapeout?
+## CI
 
-Tiny Tapeout is an educational project that aims to make it easier and cheaper than ever to get your digital and analog designs manufactured on a real chip.
+Two workflows:
 
-To learn more and get started, visit https://tinytapeout.com.
+- **`ci.yaml`** — ours. Lint (verilator), sim (cocotb + fusesoc), synth
+  check (yosys). Runs on every push/PR, skips docs-only changes. Uses a
+  slim custom toolchain image (`ci/Dockerfile`, ~830MB vs. the 3.76GB
+  `hpretl/iic-osic-tools` it's derived from), published to GHCR by
+  `ci-image.yaml`. `ci.yaml`'s first job (`ensure-image`) pulls that image
+  and builds it inline as a fallback if the pull fails, so it's never
+  blocked on `ci-image.yaml` having already run.
+- **`ci-image.yaml`** — builds/publishes the slim image, only when
+  `ci/Dockerfile` changes.
+- **`tt-gds.yaml`** — Tiny Tapeout's LibreLane/GDS build. Manual-trigger
+  only (`workflow_dispatch`) since it's slow and PDK-heavy — run it
+  explicitly when checking submission-readiness, not on every WIP push.
 
-## Set up your Verilog project
+`main` is protected: PRs required, `lint`/`sim`/`synth-check` must pass to
+merge, no direct pushes or force-pushes.
 
-1. Add your Verilog files to the `src` folder.
-2. Edit the [info.yaml](info.yaml) and update information about your project, paying special attention to the `source_files` and `top_module` properties. If you are upgrading an existing Tiny Tapeout project, check out our [online info.yaml migration tool](https://tinytapeout.github.io/tt-yaml-upgrade-tool/).
-3. Edit [docs/info.md](docs/info.md) and add a description of your project.
-4. Adapt the testbench to your design. See [test/README.md](test/README.md) for more information.
+## Local dev
 
-The GitHub action will automatically build the ASIC files using [LibreLane](https://www.zerotoasiccourse.com/terminology/librelane/).
+Fusesoc is layered on top of the same `src/` files as a convenience
+(`Makefile`, `protocol_emulator.core`) — `make sim` / `make cocotb`. This
+is separate from `test/Makefile`, which is the canonical cocotb+Icarus
+path CI and Tiny Tapeout's own gate-level check both use.
 
-## Enable GitHub actions to build the results page
+## Tiny Tapeout project files
 
-- [Enabling GitHub Pages](https://tinytapeout.com/faq/#my-github-action-is-failing-on-the-pages-part)
+This repo is built on the [cmos5l Verilog template](https://github.com/TinyTapeOut/ttihp-verilog-template/tree/cmos5l).
+Reference, not marketing copy:
 
-## Resources
-
-- [FAQ](https://tinytapeout.com/faq/)
-- [Digital design lessons](https://tinytapeout.com/digital_design/)
-- [Learn how semiconductors work](https://tinytapeout.com/siliwiz/)
-- [Join the community](https://tinytapeout.com/discord)
-- [Build your design locally](https://www.tinytapeout.com/guides/local-hardening/)
-
-## What next?
-
-- [Submit your design to the next shuttle](https://app.tinytapeout.com/).
-- Edit [this README](README.md) and explain your design, how it works, and how to test it.
-- Share your project on your social network of choice:
-  - LinkedIn [#tinytapeout](https://www.linkedin.com/search/results/content/?keywords=%23tinytapeout) [@TinyTapeout](https://www.linkedin.com/company/100708654/)
-  - Mastodon [#tinytapeout](https://chaos.social/tags/tinytapeout) [@matthewvenn](https://chaos.social/@matthewvenn)
-  - X (formerly Twitter) [#tinytapeout](https://twitter.com/hashtag/tinytapeout) [@tinytapeout](https://twitter.com/tinytapeout)
-  - Bluesky [@tinytapeout.com](https://bsky.app/profile/tinytapeout.com)
+- [`info.yaml`](info.yaml) — the actual submission manifest: title,
+  top_module, source file list, pinout. LibreLane and Tiny Tapeout's CI
+  read this directly; keep it in sync with `src/`.
+- [`src/config.json`](src/config.json) — LibreLane place-and-route config
+  (clock period, density). Don't touch unless you know why.
+- [`docs/info.md`](docs/info.md) — project description for Tiny Tapeout's
+  site/datasheet.
+- [`test/README.md`](test/README.md) — cocotb testbench notes.
+- [Tiny Tapeout FAQ](https://tinytapeout.com/faq/) ·
+  [Digital design lessons](https://tinytapeout.com/digital_design/) ·
+  [Local hardening guide](https://www.tinytapeout.com/guides/local-hardening/)
