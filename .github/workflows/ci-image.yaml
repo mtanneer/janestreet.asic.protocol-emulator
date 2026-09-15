@@ -1,0 +1,39 @@
+name: ci-image
+
+# Builds and publishes the slim CI toolchain image (ci/Dockerfile) to
+# GHCR whenever it changes. ci.yaml then pulls the pinned digest from
+# GHCR rather than rebuilding on every run.
+on:
+  push:
+    branches: [main]
+    paths:
+      - "ci/Dockerfile"
+      - ".github/workflows/ci-image.yaml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ci/Dockerfile
+          push: true
+          tags: |
+            ghcr.io/${{ github.repository_owner }}/protocol-emulator-ci:latest
+            ghcr.io/${{ github.repository_owner }}/protocol-emulator-ci:${{ github.sha }}

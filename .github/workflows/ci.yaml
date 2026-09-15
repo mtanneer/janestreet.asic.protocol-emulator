@@ -1,0 +1,93 @@
+name: ci
+
+on: [push, pull_request, workflow_dispatch]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+# Uses our own slim CI image (ci/Dockerfile), built and pushed to GHCR by
+# ci-image.yaml. ~1.1GB vs the 3.76GB full hpretl/iic-osic-tools image we
+# started with — that one's still the right choice for local full-EDA work
+# (openlane, klayout, spice), just far more than these checks need.
+env:
+  CI_IMAGE: ghcr.io/mtanneer/protocol-emulator-ci:latest
+
+jobs:
+  # First push (or any push where ci-image.yaml hasn't published yet)
+  # would otherwise race: this job pulls the image and builds+pushes it
+  # locally as a fallback if the pull fails, so ci.yaml never depends on
+  # ci-image.yaml having already finished.
+  ensure-image:
+    runs-on: ubuntu-24.04
+    permissions:
+      packages: write
+    steps:
+      - uses: actions/checkout@v6
+      - name: Check if image exists
+        id: check
+        run: |
+          if docker pull ${{ env.CI_IMAGE }}; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+      - name: Log in to GHCR
+        if: steps.check.outputs.exists == 'false'
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+      - name: Build and push (fallback)
+        if: steps.check.outputs.exists == 'false'
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ci/Dockerfile
+          push: true
+          tags: ${{ env.CI_IMAGE }}
+
+  lint:
+    needs: ensure-image
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ env.CI_IMAGE }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: Verilator lint
+        run: verilator --lint-only -Wall -Wno-DECLFILENAME src/project.v
+
+  sim:
+    needs: ensure-image
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ env.CI_IMAGE }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: cocotb test
+        run: |
+          cd test
+          make clean
+          make
+          ! grep failure results.xml
+      - name: fusesoc sim
+        run: make sim
+      - uses: actions/upload-artifact@v7
+        if: always()
+        with:
+          name: sim-results
+          path: |
+            test/tb.fst
+            test/results.xml
+
+  synth-check:
+    needs: ensure-image
+    runs-on: ubuntu-24.04
+    container:
+      image: ${{ env.CI_IMAGE }}
+    steps:
+      - uses: actions/checkout@v6
+      - name: yosys elaborate + synth stat
+        run: |
+          yosys -p "read_verilog src/project.v; hierarchy -top $(grep top_module info.yaml | sed -E 's/.*\"(.*)\".*/\1/'); proc; opt; stat"
