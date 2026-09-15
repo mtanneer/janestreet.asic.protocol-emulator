@@ -1,0 +1,5 @@
+#!/bin/sh
+# Secret scan on staged changes only (fast, working-tree). Full-history +
+# verified-only scan runs in CI (.github/workflows/secret-scan.yaml).
+command -v gitleaks >/dev/null 2>&1 || { echo "gitleaks not installed, skipping local secret scan (CI will still catch it)"; exit 0; }
+gitleaks git --staged --redact --verbose

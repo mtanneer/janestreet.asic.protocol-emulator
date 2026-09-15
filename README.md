@@ -30,11 +30,19 @@ Two workflows:
 - **`tt-gds.yaml`** — Tiny Tapeout's LibreLane/GDS build. Manual-trigger
   only (`workflow_dispatch`) since it's slow and PDK-heavy — run it
   explicitly when checking submission-readiness, not on every WIP push.
+- **`secret-scan.yaml`** — gitleaks, full-history scan on every push/PR.
+  Not a required status check (would block merge on any pre-existing
+  history match); review findings manually if it fails.
 
 `main` is protected: PRs required, `lint`/`sim`/`synth-check` must pass to
-merge, no direct pushes or force-pushes.
+merge, no direct pushes or force-pushes, squash/rebase only (no merge
+commits), branches auto-delete on merge.
 
 ## Local dev
+
+Run `git config core.hooksPath .githooks` once after cloning to enable
+the pre-commit secret scan (gitleaks on staged changes). Not automatic —
+git doesn't track hook activation, only the hook files themselves.
 
 Fusesoc is layered on top of the same `src/` files as a convenience
 (`Makefile`, `protocol_emulator.core`) — `make sim` / `make cocotb`. This
