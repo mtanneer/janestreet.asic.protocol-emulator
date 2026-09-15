@@ -9,9 +9,12 @@
 # --skip is required: without it the image tries to launch a VNC/X11 UI
 # server instead of running the given command.
 #
+# Mounted at /foss/designs, not an arbitrary path — that's the image's
+# own default working dir ($DESIGNS env var, designer user's home area).
+#
 # Override the image with: IMAGE=hpretl/iic-osic-tools:<tag> ./scripts/dev-shell.sh
 set -eu
 
 IMAGE="${IMAGE:-hpretl/iic-osic-tools:2026.08}"
 
-exec docker run --rm -it -v "$(pwd)":/work -w /work "$IMAGE" --skip bash
+exec docker run --rm -it -v "$(pwd)":/foss/designs -w /foss/designs "$IMAGE" --skip bash
