@@ -11,6 +11,9 @@ concurrency:
 # started with — that one's still the right choice for local full-EDA work
 # (openlane, klayout, spice), just far more than these checks need.
 env:
+  # NOTE: `container.image` cannot reference the env context (GitHub
+  # Actions restriction), so it's hardcoded in each job below — keep
+  # those in sync with this value if it ever changes.
   CI_IMAGE: ghcr.io/mtanneer/protocol-emulator-ci:latest
 
 jobs:
@@ -52,7 +55,7 @@ jobs:
     needs: ensure-image
     runs-on: ubuntu-24.04
     container:
-      image: ${{ env.CI_IMAGE }}
+      image: ghcr.io/mtanneer/protocol-emulator-ci:latest
     steps:
       - uses: actions/checkout@v6
       - name: Verilator lint
@@ -62,7 +65,7 @@ jobs:
     needs: ensure-image
     runs-on: ubuntu-24.04
     container:
-      image: ${{ env.CI_IMAGE }}
+      image: ghcr.io/mtanneer/protocol-emulator-ci:latest
     steps:
       - uses: actions/checkout@v6
       - name: cocotb test
@@ -85,7 +88,7 @@ jobs:
     needs: ensure-image
     runs-on: ubuntu-24.04
     container:
-      image: ${{ env.CI_IMAGE }}
+      image: ghcr.io/mtanneer/protocol-emulator-ci:latest
     steps:
       - uses: actions/checkout@v6
       - name: yosys elaborate + synth stat
