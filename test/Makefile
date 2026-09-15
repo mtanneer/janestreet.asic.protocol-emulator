@@ -2,7 +2,13 @@
 # See https://docs.cocotb.org/en/stable/quickstart.html for more info
 
 # defaults
-SIM ?= icarus
+SIM ?= verilator
+
+ifeq ($(SIM),verilator)
+# tb.v uses a plain #1 delay (dumpvars settle); Verilator needs an explicit
+# timing mode instead of just accepting delay statements like Icarus does.
+EXTRA_ARGS += --timing
+endif
 FST ?= -fst # Use more efficient FST format
 TOPLEVEL_LANG ?= verilog
 SRC_DIR = $(PWD)/../src
