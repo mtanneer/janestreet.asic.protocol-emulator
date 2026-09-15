@@ -1,0 +1,30 @@
+CAPI=2:
+name: janestreet:asic:protocol_emulator:0.1.0
+description: >
+  DUMMY scaffold — validates sim/build pipeline before real RTL exists.
+  Points at the same src/ files declared in info.yaml (the TT/LibreLane
+  submission manifest); fusesoc is a local dev convenience layered on top.
+
+filesets:
+  rtl:
+    files:
+      - src/project.v
+    file_type: verilogSource
+
+  tb:
+    files:
+      - test/tb.v
+    file_type: verilogSource
+
+targets:
+  default: &default
+    filesets: [rtl]
+
+  sim:
+    <<: *default
+    filesets: [rtl, tb]
+    toplevel: tb
+    default_tool: icarus
+    tools:
+      icarus:
+        iverilog_options: [-g2012]
