@@ -40,9 +40,15 @@ commits), branches auto-delete on merge.
 
 ## Local dev
 
-Run `git config core.hooksPath .githooks` once after cloning to enable
-the pre-commit secret scan (gitleaks on staged changes). Not automatic —
-git doesn't track hook activation, only the hook files themselves.
+Full setup instructions live in the [wiki](../../wiki) — start at
+[Setup: macOS](../../wiki/Setup-macOS). Short version: everything
+(fusesoc, iverilog, yosys, verilator) runs inside a Docker container, not
+on the host. `./scripts/dev-shell.sh` drops you into it.
+
+Run `git config core.hooksPath .githooks` once after cloning (inside the
+container) to enable the pre-commit secret scan (gitleaks on staged
+changes). Not automatic — git doesn't track hook activation, only the
+hook files themselves.
 
 Fusesoc is layered on top of the same `src/` files as a convenience
 (`Makefile`, `protocol_emulator.core`) — `make sim` / `make cocotb`. This
