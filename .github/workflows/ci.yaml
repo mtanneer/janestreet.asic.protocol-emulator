@@ -7,7 +7,7 @@ concurrency:
   cancel-in-progress: true
 
 # Uses our own slim CI image (ci/Dockerfile), built and pushed to GHCR by
-# ci-image.yaml. ~1.1GB vs the 3.76GB full hpretl/iic-osic-tools image we
+# ci-image.yaml. ~830MB vs the 3.76GB full hpretl/iic-osic-tools image we
 # started with — that one's still the right choice for local full-EDA work
 # (openlane, klayout, spice), just far more than these checks need.
 env:

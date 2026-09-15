@@ -6,7 +6,7 @@
 >
 > Two CI workflows: `ci.yaml` is our own (lint, sim, synth-check, runs on
 > every push), using our own slim toolchain image (`ci/Dockerfile`,
-> ~1.1GB vs. the 3.76GB `hpretl/iic-osic-tools` it's derived from) —
+> ~830MB vs. the 3.76GB `hpretl/iic-osic-tools` it's derived from) —
 > that's the fast feedback loop. `tt-gds.yaml` is Tiny Tapeout's
 > LibreLane/GDS build, manual-trigger only (`workflow_dispatch`) since
 > it's slow and PDK-heavy — run it explicitly when checking
