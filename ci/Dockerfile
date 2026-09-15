@@ -21,15 +21,17 @@ RUN git clone --depth 1 --recurse-submodules --shallow-submodules --branch v0.69
     && cmake --build /src/yosys/build -j"$(nproc)" \
     && cmake --install /src/yosys/build --prefix /out/usr/local
 
-# verilator v5.052 — build only the "opt" target (skips the debug variant,
-# which the default `make` target also builds and roughly doubles build
-# time for a binary we never use in CI).
+# verilator v5.052 — build only the "opt" target (skips the debug variant).
+# `make install` on its own still rebuilds both (it depends on all_nomsg ->
+# verilator_exe, which calls `$(MAKE) -C src` with no target, i.e. src's
+# own default: "dbg opt") regardless of what's already built — so install
+# via install-all directly, bypassing the all_nomsg/verilator_exe rebuild.
 RUN apt-get update && apt-get install -y --no-install-recommends help2man perl libfl-dev \
     && rm -rf /var/lib/apt/lists/* \
     && git clone --depth 1 --branch v5.052 https://github.com/verilator/verilator.git /src/verilator \
     && cd /src/verilator && autoconf && ./configure \
     && make -C src opt -j"$(nproc)" \
-    && make install DESTDIR=/out 'VL_INST_PUBLIC_BIN_FILES=verilator_bin$(EXEEXT)'
+    && make install-all DESTDIR=/out 'VL_INST_PUBLIC_BIN_FILES=verilator_bin$(EXEEXT)'
 
 # cocotb has no prebuilt wheel (sdist only, compiles a C extension) —
 # build the wheel here where build-essential already exists.
